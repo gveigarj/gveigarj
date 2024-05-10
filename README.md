@@ -1,6 +1,4 @@
-👋 Hi, I’m @gveigarj!
-I hope you all are well, then I'll be back to edit this space, ok?
-
+👋 Muito prazer, sou Gustavo Veiga
 
 <!---
 - 👀 I’m interested in ...
