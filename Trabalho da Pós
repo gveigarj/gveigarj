@@ -1,0 +1,93 @@
+# Sobre: Trabalho da Disciplina de Programação em R da Pós Graduação de Ciência de Dados da Unicarioca
+# Participante (nome / matrícula): Gustavo Veiga / 2015201352
+# Professor: Sérgio Monteiro, DSc
+#
+##########################################
+# Documentações
+# https://www.quantmod.com/documentation/addMA.html
+# 
+# Instalando e carregando as bibliotecas necessárias
+install.packages("quantmod")
+library(quantmod)
+
+# Definindo o ticker
+ticker <- "PETR4.SA"  
+#PETR4.SA (Petrobras na Bovespa)
+#BBAS3.SA (Banco do Brasil)
+#ITUB4.SA (Itaú)
+#BBDC4.SA (Bradesco)
+
+# Definindo o período desejado
+data_inicio <- "2020-01-01"
+data_fim <- Sys.Date()  # Data atual
+
+# Baixando os dados do ticker selecionado
+simb <- getSymbols(ticker, src = "yahoo", from = data_inicio, to = data_fim, auto.assign = FALSE)
+
+# Exibindo o dataframe dos preços ajustados
+dataframe <- na.omit(Ad(get(ticker)))
+#head(dataframe)
+
+# Criando o histograma dos preços ajustados
+### Não consegui fazer utilizando o padrão candlestick (chartSeries)
+hist(dataframe, main = "Histograma dos Preços Ajustados da Petrobras", xlab = "Preço Ajustado", col = "lightblue")
+
+##########################################################
+
+# Extraindo os preços ajustados
+precos_ajustados <- Cl(simb)
+
+# Calculando médias móveis de curto e longo prazo
+simb$SMA20 <- SMA(precos_ajustados, n = 20)
+simb$SMA50 <- SMA(precos_ajustados, n = 50)
+
+# Calculando os envelopes de Bollinger
+n <- 20  # Período para os envelopes de Bollinger
+simb$SDB <- BBands(precos_ajustados, n = n, maType = "SMA", sd = 2)$dn
+simb$SDT <- BBands(precos_ajustados, n = n, maType = "SMA", sd = 2)$up
+
+# Description
+# Add one or more moving averages to a chart.
+
+# Usage
+# addSMA(n = 10, on = 1, with.col = Cl, overlay = TRUE, col = "brown")
+
+# addEMA(n = 10, wilder = FALSE, ratio=NULL, on = 1,
+#        with.col = Cl, overlay = TRUE, col = "blue")
+
+# addWMA(n = 10, wts=1:n, on = 1, with.col = Cl, overlay = TRUE, col = "green")
+
+# addDEMA(n = 10, on = 1, with.col = Cl, overlay = TRUE, col = "pink")
+
+# addEVWMA(n = 10, on = 1, with.col = Cl, overlay = TRUE, col = "yellow")
+
+# addZLEMA(n = 10, ratio=NULL, on = 1, with.col = Cl, overlay = TRUE, col = "red")
+# Arguments
+# n	periods to average over
+# wilder	logical; use wilder?
+# wts	a vector of weights
+# ratio	a smoothing/decay ratio
+# on	apply to which figure (see below)
+# with.col	using which column of data (see below)
+# overlay	draw as overlay
+# col	color of MA
+
+# Criando a série temporal dos preços ajustados
+chartSeries(x = dataframe, name = "Série Temporal dos Preços Ajustados da Petrobras", ylab = "Preço Ajustado", type = "candlesticks", plot = TRUE, theme = "black")
+
+# Aqui vamos "plotar" (informações principais pra serem apresentadas, que são praticamente todas aqui, como os preços ajustados, indicadores técnicos, títulos padrões)
+chartSeries(x = precos_ajustados, 
+                name = "Preços Ajustados e Indicadores Técnicos", 
+                type = "candlesticks", 
+                plot = TRUE, 
+                theme = "white", 
+                TA = c(addBBands(n = 20, sd = 2), addEMA(n = 3), addEMA(n = 10), addEMA(n = 18)))
+
+# Adicionando sugestões de compra e venda
+# Se o preço cruzar acima da média móvel de curto prazo e estiver abaixo do envelope superior de Bollinger, é um sinal de compra
+# Se o preço cruzar abaixo da média móvel de curto prazo e estiver acima do envelope inferior de Bollinger, é um sinal de venda
+signals <- rep(NA, length(precos_ajustados))
+signals[precos_ajustados > simb$SMA20 & precos_ajustados < simb$SDT] <- 1  # Compra
+signals[precos_ajustados < simb$SMA20 & precos_ajustados > simb$SDB] <- -1  # Venda
+points(precos_ajustados[signals == 1], col = "green", pch = 18)
+points(precos_ajustados[signals == -1], col = "red", pch = 18)
